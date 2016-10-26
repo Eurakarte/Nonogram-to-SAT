@@ -111,3 +111,67 @@ public String toString()
 }
 
 }
+
+class CNF {
+
+public ArrayList<ArrayList<Integer>> cl; // the clauses as lists of integers
+public int C = 0; // count of clauses;
+public int V = 0; // count of variables
+
+public CNF()
+{
+	cl = new ArrayList<ArrayList<Integer>>();
+}
+
+// converts an NFA to CNF form using Knuth's algorithm 
+// from excercise 436 of section 7.2.2.2 in TAOCP
+public CNF ( int n, NFA nfa )
+{
+	class Transition
+	{
+		public int transStart;
+		public int transChar;
+		public int transEnd;
+		
+		public Transition(int start, int c, int end)
+		{
+			transStart = start;
+			transChar = c;
+			transEnd = end;
+		}
+	}
+	ArrayList<Transition> transitions = new ArrayList<Transition>();
+	
+	for(int transStart = 0; transStart < nfa.Q; ++transStart)
+	{
+		// iterate over binary alphabet
+		for (int a = 0; a <= 1; ++a)
+		{
+			// iterate over transition beginnings
+			for (int transEnd = 0; transEnd < nfa.Q; ++transEnd)
+			{
+				if (nfa.trans[transStart][a][transEnd])
+					transitions.add(new Transition(transStart, a, transEnd));
+			}
+		}
+	}
+}
+
+// outputs in DIMACS cnf format
+public String toString()
+{
+	String str = new String();
+	str += "p cnf " + V + " " + C + "\r\n";
+	for (int i = 0; i < cl.size(); ++i)
+	{
+		for (int j = 0; j < cl.get(i).size(); ++j)
+		{
+			str += cl.get(i).get(j) + " ";
+		}
+		str += "0\r\n";
+	}
+	
+	return str;
+}
+
+}
