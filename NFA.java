@@ -155,6 +155,124 @@ public CNF ( int n, NFA nfa )
 			}
 		}
 	}
+	
+	V = getTransitionVarIdx(n, nfa.Q, n, transitions.size() - 1);
+	
+	cl = new ArrayList<ArrayList<Integer>>();
+	for (int k = 1; k <= n; ++k)
+	{
+		// clause family (i)
+		for (int i = 0; i < transitions.size(); ++i)
+		{
+			cl.add(new ArrayList<Integer>());
+			ArrayList<Integer> clause = cl.get(cl.size() - 1);
+			int notTransitionVar = -getTransitionVarIdx(n, nfa.Q, k, i);
+			clause.add(notTransitionVar);
+			
+			if (transitions.get(i).transChar == 1)
+				clause.add(k);
+			else
+				clause.add(-k);
+			
+			cl.add(new ArrayList<Integer>());
+			clause = cl.get(cl.size() - 1);
+			clause.add(notTransitionVar);
+			clause.add(getStateVarIdx(n, k, transitions.get(i).transEnd));
+		}
+		
+		for (int q = 0; q < nfa.Q; ++q)
+		{
+			// clause family (ii)
+			cl.add(new ArrayList<Integer>());
+			ArrayList<Integer> clause = cl.get(cl.size() - 1);
+			clause.add(-getStateVarIdx(n, k - 1, q));
+			for (int i = 0; i < transitions.size(); ++i)
+			{
+				if (transitions.get(i).transStart == q)
+					clause.add(getTransitionVarIdx(n, nfa.Q, k, i));
+			}
+			
+			// clause family (iii)
+			cl.add(new ArrayList<Integer>());
+			clause = cl.get(cl.size() - 1);
+			clause.add(-getStateVarIdx(n, k, q));
+			for (int i = 0; i < transitions.size(); ++i)
+			{
+				if (transitions.get(i).transEnd == q)
+					clause.add(getTransitionVarIdx(n, nfa.Q, k, i));
+			}
+		}
+		
+		// clause family (iv)
+		for (int a = 0; a <= 1; ++a)
+		{
+			cl.add(new ArrayList<Integer>());
+			ArrayList<Integer> clause = cl.get(cl.size() - 1);
+			
+			if (a == 1)
+				clause.add(-k);
+			else
+				clause.add(k);
+			
+			for (int i = 0; i < transitions.size(); ++i)
+			{
+				if (transitions.get(i).transChar == a)
+					clause.add(getTransitionVarIdx(n, nfa.Q, k, i));
+			}
+		}
+		
+		// clause family (v)
+		for (int i = 0; i < transitions.size(); ++i)
+		{
+			cl.add(new ArrayList<Integer>());
+			ArrayList<Integer> clause = cl.get(cl.size() - 1);
+			clause.add(-getTransitionVarIdx(n, nfa.Q, k, i));
+			
+			Transition t = transitions.get(i);
+			for (int q = 0; q < nfa.Q; ++q)
+			{
+				if (nfa.trans[q][t.transChar][t.transEnd])
+					clause.add(getStateVarIdx(n, k - 1, q));
+			}
+		}
+	}
+	
+	// clause family (vi)
+	int[] initialStates = nfa.I.clone();
+	int[] finalStates = nfa.F.clone();
+	Arrays.sort(initialStates);
+	Arrays.sort(finalStates);
+	for (int q = 0; q < nfa.Q; ++q)
+	{
+		if (Arrays.binarySearch(initialStates, q) < 0)
+		{
+			cl.add(new ArrayList<Integer>());
+			cl.get(cl.size() - 1).add(-getStateVarIdx(n, 0, q));
+		}
+		
+		if (Arrays.binarySearch(finalStates, q) < 0)
+		{
+			cl.add(new ArrayList<Integer>());
+			cl.get(cl.size() - 1).add(-getStateVarIdx(n, n, q));
+		}
+	}
+	
+	C = cl.size();
+}
+
+private static int getStateVarIdx(int n, int k, int stateIndex)
+{
+	int retIndex = n; // offset for variables x_1 through x_n
+	retIndex += (k + 1) + ((n + 1) * stateIndex); // k + 1 and n + 1 because states are 0 indexed
+	return retIndex;
+}
+
+private static int getTransitionVarIdx(int n, int numStates, int k, int transIdx)
+{
+	int retIndex = n; // offset for variables x_1 through x_n
+	retIndex += numStates * (n + 1); // offset for state variables q_0 through q_n, for each state q
+	retIndex += k + (n * transIdx);
+	return retIndex;
 }
 
 // outputs in DIMACS cnf format
